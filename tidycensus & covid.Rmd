@@ -1,0 +1,89 @@
+---
+title: "TIDYCENSUS"
+author: "Haoshu"
+date: "1/04/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(mapview)
+library(tidycensus)
+library(leaflet)
+census_api_key("587741d263a5873b848cd00efcf48d53f17156df", install = TRUE, overwrite = TRUE)
+
+```
+
+
+
+
+## OBTAINING ALL THE ZIPCODE-LEVEL INCOME ESTIMATES FROM THE CENSUS
+```{r pressure, echo=FALSE}
+options(tigris_use_cache = TRUE)
+
+zipinc_all <- get_acs(geography = "zcta",
+              variables = "B19013_001",
+              state = NULL,
+              county = NULL,
+              geometry = TRUE)
+
+zipinc_all$zipcode<-as.numeric(zipinc_all$GEOID)
+class(zipinc_all$zipcode)
+
+
+```
+
+
+## SUBSETTING THE INCOME DATA EXCLUSIVELY TO NYC AND VIEW THE MAP
+```{r}
+zipinc_nyc <- zipinc_all %>%
+               filter (zipcode >=10001 & zipcode <=11697)
+               
+
+View(zipinc_nyc)
+mapview(zipinc_nyc, zcol = "estimate")
+
+```
+
+
+## loading NYC's covid data at zipcode level as of 01/04/21
+```{r}
+library(readxl)
+
+nyc_covid <- read_excel("nyc_covid.xlsx")
+View(nyc_covid)   
+
+```
+
+
+
+## MERGE BOTH INCOME AND COVID DATASET BY ZIPCODE
+```{r}
+zipcovid_nyc<-merge(zipinc_nyc,nyc_covid,by="zipcode")
+View(zipcovid_nyc)
+
+mapview(zipcovid_nyc, zcol = "covid_case")
+
+```
+
+## TWO LAYERED MAPS: INCOME & COVID CASES
+```{r}
+nyc_map<-mapview(zipinc_nyc,
+                 zcol = "estimate",
+                 homebutton = FALSE) + 
+      mapview(zipcovid_nyc, 
+              zol="covid_case_rate", 
+              alpha = 0.5, 
+              col.regions = "orange",
+              homebutton = FALSE)
+                
+nyc_map
+
+
+    
+
+
+
+
+
+```
